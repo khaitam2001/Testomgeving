@@ -135,16 +135,34 @@ def getSimilarProfiles(profile_id):
     """
     boughtProducts = getBoughtProducts(profile_id)
     profileFrequency = getProfilesFrequency(boughtProducts)
+    Recommendations = []
+
     print(profileFrequency)
+
+    if boughtProducts >= 1:
+        # We willen 4 recommendations hebben. Dus doet wordt gedaan totdat er 4 recommendations zijn.
+        while len(Recommendations) < 4:
+            biggest = max(profileFrequency.values())
+            for profile_id, frequency in profileFrequency.items():
+                # Als de recommendation een frequency heeft van "biggest" dan wordt hij toegevoegd aan een lijst
+                if frequency == biggest:
+                    print(profile_id)
+                    Recommendations.append(profile_id)
+                    profileFrequency.pop(profile_id)
+                    break
+        return Recommendations
+    else:
+        print("Er is geen een gekochte product")
 
 
 def insertRecommendations():
     profile_ids = getProfileIDs()
-    print(profile_ids)
+    for profile_id in profile_ids:
+        print(profile_id)
+        
 
 
-# insertRecommendations()
-print(getBoughtProducts("59dce306a56ac6edb4c127a3"))
-getSimilarProfiles("59dce306a56ac6edb4c127a3")
+insertRecommendations()
+
 
 test_session_id = "0166c77f-f534-4fea-9e98-c83e7d3a79e9"
