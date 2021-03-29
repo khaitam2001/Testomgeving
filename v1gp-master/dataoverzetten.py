@@ -1,8 +1,9 @@
 from rdbconnection import conrdb
+import time
 
 rdbcon, rdbcur = conrdb()
 
-def getProfileIDs(browser_id=None):
+def getProfileIDs():
     """
     :param browser_id: str, Als het leeg is dan zoeken we naar alle profielen.
     :return: Een lijst met alle ProfileIDs van de database. Dit komt van de tabel profile.
@@ -12,9 +13,9 @@ def getProfileIDs(browser_id=None):
     return rdbcur.fetchall()
 
 
-def getProfileIDFromBUIDS(profile_id):
+def getProfileIDFromBUIDS(browser_id):
     select_profiles_query = "SELECT profile_id FROM buids WHERE browser_id = %s"
-    rdbcur.execute(select_profiles_query, (profile_id,))
+    rdbcur.execute(select_profiles_query, (browser_id,))
     return rdbcur.fetchall()
 
 def getSessionIDFromOrder(productID):
@@ -22,8 +23,8 @@ def getSessionIDFromOrder(productID):
     :param productID: str
     :return: Een lijst met sessionIDs die bij de gegeven productID hoort. Dit komt van de tabel Orders.
     """
-    select_orderID_query = "SELECT session_id FROM orders WHERE product_id = %s"
-    rdbcur.execute(select_orderID_query, (productID,))
+    select_sessionID_query = "SELECT session_id FROM orders WHERE product_id = %s"
+    rdbcur.execute(select_sessionID_query, (productID,))
     return rdbcur.fetchall()
 
 
@@ -94,27 +95,26 @@ def getBoughtProducts(profileID):
     return product_ids
 
 
-def getProfileIDFromOrder(session_id):
-    pass
-
-
-def getProfilesFrequency(product_ids):
+def getProfilesFrequency(product_ids, profile_id=None):
     """
     :param product_ids: Lijst met producten
-    :return: Return een dictionary met de frequency van een profiel. Hoe vaker een profiel een product koopt hoe hoger
-    zijn frequency.
+    :return: Return een dictionary met de frequency van profielen. Hoe vaker een profiel een product koopt hoe hoger
+    zijn frequency voor dat product.
     """
-    sessions = []
     browser_ids = []
     profile_ids = []
     # Hier wordt er gekeken naar welke profiel ID's hebben de gekozen producten gekocht.
     # We weten alleen de session ID, dus we moeten van de session ID naar de browser ID naar de profiel ID gaan.
     for product in product_ids:
         sessions = getSessionIDFromOrder(product)
-    for session in sessions:
-        browser_ids.append(getBrowserIDFromSessions(session[0])[0])
-    for browser_id in browser_ids:
-        profile_ids.append(getProfileIDFromBUIDS(browser_id)[0][0])
+        for session in sessions:
+            browser_ids.append(getBrowserIDFromSessions(session[0])[0])
+        for browser_id in browser_ids:
+            # Voeg het profiel alleen toe als het niet zichzelf is
+            if profile_id != getProfileIDFromBUIDS(browser_id)[0][0]:
+                profile_ids.append(getProfileIDFromBUIDS(browser_id)[0][0])
+
+
 
     # Bepaal hier hoe vaak een profiel ID voor komt. Hoe vaker een profiel iets gekocht heeft, hoe vaker hij voorkomt.
     frequency = {}
@@ -123,7 +123,6 @@ def getProfilesFrequency(product_ids):
             frequency[profile_id] = 1
         else:
             frequency[profile_id] += 1
-
     return frequency
 
 
@@ -133,23 +132,24 @@ def getSimilarProfiles(profile_id):
     :return: Lijst met profielen die het meeste lijken op de gebruiker gebaseerd op de frequency van een profiel. Hoe
     vaker een profiel iets koopt, hoe hoger zijn frequency.
     """
+
     boughtProducts = getBoughtProducts(profile_id)
-    profileFrequency = getProfilesFrequency(boughtProducts)
+    profileFrequency = getProfilesFrequency(boughtProducts, profile_id)
     Recommendations = []
 
-    print(profileFrequency)
 
-    if boughtProducts >= 1:
+    if boughtProducts != 0:
         # We willen 4 recommendations hebben. Dus doet wordt gedaan totdat er 4 recommendations zijn.
         while len(Recommendations) < 4:
+
             biggest = max(profileFrequency.values())
             for profile_id, frequency in profileFrequency.items():
                 # Als de recommendation een frequency heeft van "biggest" dan wordt hij toegevoegd aan een lijst
                 if frequency == biggest:
-                    print(profile_id)
                     Recommendations.append(profile_id)
                     profileFrequency.pop(profile_id)
                     break
+
         return Recommendations
     else:
         print("Er is geen een gekochte product")
@@ -158,11 +158,12 @@ def getSimilarProfiles(profile_id):
 def insertRecommendations():
     profile_ids = getProfileIDs()
     for profile_id in profile_ids:
-        print(profile_id)
-        
+        print("Profile ID: " + str(profile_id))
+        start = time.time()
+        print("Recommendations: " + str(getSimilarProfiles(profile_id)))
+        end = time.time()
+        print("Bought Items By Profile: " + str(getBoughtProducts(profile_id)))
+        print(str(end - start) + "\n")
 
-
+# ['31953', '32093-queen', '31175', '7627', '41743', '04164', '42030', '42030', '04164', '41743', '7627', '31175', '32093-queen', '31953']
 insertRecommendations()
-
-
-test_session_id = "0166c77f-f534-4fea-9e98-c83e7d3a79e9"
