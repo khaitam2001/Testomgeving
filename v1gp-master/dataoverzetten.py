@@ -2,64 +2,68 @@ from rdbconnection import conrdb
 
 rdbcon, rdbcur = conrdb()
 
-def getAllProfileIDs():
+def getProfileIDs(browser_id=None):
     """
-    :return: Een lijst met alle ProfileIDs van de database
+    :param browser_id: str, Als het leeg is dan zoeken we naar alle profielen.
+    :return: Een lijst met alle ProfileIDs van de database. Dit komt van de tabel profile.
     """
     select_profileIDs_query = "SELECT profile_id FROM profile"
     rdbcur.execute(select_profileIDs_query)
     return rdbcur.fetchall()
 
 
-def getSessionIDFromOrder(productID=None):
+def getProfileIDFromBUIDS(profile_id):
+    select_profiles_query = "SELECT profile_id FROM buids WHERE browser_id = %s"
+    rdbcur.execute(select_profiles_query, (profile_id,))
+    return rdbcur.fetchall()
+
+def getSessionIDFromOrder(productID):
     """
     :param productID: str
-    :return: Een lijst met sessionIDs die bij de gegeven productID hoort.
+    :return: Een lijst met sessionIDs die bij de gegeven productID hoort. Dit komt van de tabel Orders.
     """
-    if productID == None:
-        pass
-    else:
-        select_orderID_query = "SELECT session_id FROM orders WHERE product_id = %s"
-        rdbcur.execute(select_orderID_query, (productID,))
+    select_orderID_query = "SELECT session_id FROM orders WHERE product_id = %s"
+    rdbcur.execute(select_orderID_query, (productID,))
     return rdbcur.fetchall()
 
 
-def getProductIDFromOrder(sessionID=None):
+def getProductIDFromOrder(sessionID):
     """
     :param sessionID: str
-    :return: Een lijst met productIDs die bij de gegeven sessionID hoort.
+    :return: Een lijst met productIDs die bij de gegeven sessionID hoort. Dit komt van de tabel Orders.
     """
-    if sessionID == None:
-        pass
-    else:
-        select_productID_query = "SELECT product_id FROM orders WHERE session_id = %s"
-        rdbcur.execute(select_productID_query, (sessionID,))
+    select_productID_query = "SELECT product_id FROM orders WHERE session_id = %s"
+    rdbcur.execute(select_productID_query, (sessionID,))
     return rdbcur.fetchall()
 
 
-def getBrowserIDFromBUIDS(profileID=None):
+def getBrowserIDFromBUIDS(profileID):
     """
     :param profileID:str
-    :return: Lijst met browser_ids die bij de gegeven profileID hoort.
+    :return: Lijst met browser_ids die bij de gegeven profileID hoort. Dit komt van de tabel BUIDS.
     """
-    if profileID == None:
-        pass
-    else:
-        select_buids_query = "SELECT browser_id FROM buids WHERE profile_id = %s"
-        rdbcur.execute(select_buids_query, (profileID,))
+    select_buids_query = "SELECT browser_id FROM buids WHERE profile_id = %s"
+    rdbcur.execute(select_buids_query, (profileID,))
     return rdbcur.fetchall()
 
 
-def getSessionIDFromSessions(browserID=None):
+def getSessionIDFromSessions(browserID):
     """
     :param browserID:str
-    :return: Lijst met sessionIDs die bij de gegeven browserID hoort.
+    :return: Lijst met sessionIDs die bij de gegeven browserID hoort. Dit komt van de tabel sessions.
     """
-    if browserID == None:
-        pass
-    else:
-        select_sessions_query = "SELECT session_id FROM sessions WHERE browser_id = %s"
-        rdbcur.execute(select_sessions_query, (browserID,))
+    select_sessions_query = "SELECT session_id FROM sessions WHERE browser_id = %s"
+    rdbcur.execute(select_sessions_query, (browserID,))
+    return rdbcur.fetchall()
+
+
+def getBrowserIDFromSessions(sessionID):
+    """
+    :param sessionID:str
+    :return: Een browserID die bij de gegeven sessionID hoort. Dit kom van de tabel sessions
+    """
+    select_browserid_query = "SELECT browser_id FROM sessions WHERE session_id = %s"
+    rdbcur.execute(select_browserid_query, (sessionID,))
     return rdbcur.fetchall()
 
 
@@ -90,6 +94,57 @@ def getBoughtProducts(profileID):
     return product_ids
 
 
-print(getBoughtProducts('5a393eceed295900010386a8'))
+def getProfileIDFromOrder(session_id):
+    pass
 
-test_profile_id = '5a393eceed295900010386a8'
+
+def getProfilesFrequency(product_ids):
+    """
+    :param product_ids: Lijst met producten
+    :return: Return een dictionary met de frequency van een profiel. Hoe vaker een profiel een product koopt hoe hoger
+    zijn frequency.
+    """
+    sessions = []
+    browser_ids = []
+    profile_ids = []
+    # Hier wordt er gekeken naar welke profiel ID's hebben de gekozen producten gekocht.
+    # We weten alleen de session ID, dus we moeten van de session ID naar de browser ID naar de profiel ID gaan.
+    for product in product_ids:
+        sessions = getSessionIDFromOrder(product)
+    for session in sessions:
+        browser_ids.append(getBrowserIDFromSessions(session[0])[0])
+    for browser_id in browser_ids:
+        profile_ids.append(getProfileIDFromBUIDS(browser_id)[0][0])
+
+    # Bepaal hier hoe vaak een profiel ID voor komt. Hoe vaker een profiel iets gekocht heeft, hoe vaker hij voorkomt.
+    frequency = {}
+    for profile_id in profile_ids:
+        if profile_id not in frequency:
+            frequency[profile_id] = 1
+        else:
+            frequency[profile_id] += 1
+
+    return frequency
+
+
+def getSimilarProfiles(profile_id):
+    """ 
+    :param product_ids: lijst met producten
+    :return: Lijst met profielen die het meeste lijken op de gebruiker gebaseerd op de frequency van een profiel. Hoe
+    vaker een profiel iets koopt, hoe hoger zijn frequency.
+    """
+    boughtProducts = getBoughtProducts(profile_id)
+    profileFrequency = getProfilesFrequency(boughtProducts)
+    print(profileFrequency)
+
+
+def insertRecommendations():
+    profile_ids = getProfileIDs()
+    print(profile_ids)
+
+
+# insertRecommendations()
+print(getBoughtProducts("59dce306a56ac6edb4c127a3"))
+getSimilarProfiles("59dce306a56ac6edb4c127a3")
+
+test_session_id = "0166c77f-f534-4fea-9e98-c83e7d3a79e9"
