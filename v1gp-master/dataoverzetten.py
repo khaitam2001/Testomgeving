@@ -109,32 +109,36 @@ def getProductFrequency(session_ids):
 
 
 def insertRecommendations():
+    begin = time.time()
     profile_ids = getAllBoughtProfiles()
+    end = time.time()
+    print("Inladen van alle gekochten profielen duurde: " + str(end - begin))
     profilenumber = 1
 
     for profile_id in profile_ids:
+        begin = time.time()
         gekochteproducten = getBoughtProduct(profile_id)
+        print("Dit is profile ID nummer: " + str(profilenumber) + " van de " + str(len(profile_ids)))
 
         bestsessions = getSessionFrequency(gekochteproducten, profile_id)
+        print("De meest overlappende sessions zijn: " + str(bestsessions))
 
-        print(bestsessions)
+        recommendations = getProductFrequency(bestsessions)
 
-        print(getProductFrequency(bestsessions))
+        print("De recommendations zijn: " + str(recommendations))
 
-        # begin = time.time()
-        print("This is profile ID number: " + str(profilenumber) + " out of " + str(len(profile_ids)))
         profilenumber += 1
-        #
-        # recommendedProfiles = getSimilarProfiles(profile_id)
-        # # print("Recommended profiles: " + str(recommendedProfiles))
-        #
-        # similarProducts = getSimilarProducts(recommendedProfiles)
-        # print("Similar Products: " + str(similarProducts))
-        #
-        # end = time.time()
-        # print(str(end - begin))
-        #
-        # print("\n")
 
+        end = time.time()
+        print("Tijd: " + str(end - begin))
+
+        print("\n")
+
+def giveRecommendation(profile_id):
+    gekochteproducten = getBoughtProduct(profile_id)
+    bestsessions = getSessionFrequency(gekochteproducten, profile_id)
+    recommendations = getProductFrequency(bestsessions)
+    return recommendations
 # Test Items = ['31953', '32093-queen', '31175', '7627', '41743', '04164', '42030', '42030', '04164', '41743', '7627', '31175', '32093-queen', '31953']
-insertRecommendations()
+# insertRecommendations()
+print(giveRecommendation('5a393eceed295900010386a8'))
